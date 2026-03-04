@@ -1,32 +1,31 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from processor import process_data
-from report_generator import generate_report
+from backend.processor import process_data
+from backend.report_generator import generate_report
 import time
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
-
 @app.get("/")
-def dashboard():
-    return FileResponse("frontend/index.html")
-
+def home():
+    return {"message": "QA Productivity Automation Running"}
 
 @app.post("/generate-report")
 async def generate(file: UploadFile = File(...)):
 
     start = time.time()
 
-    tester, severity, product = process_data(file.file)
+    tester_summary, severity_summary, product_summary = process_data(file.file)
 
-    report = generate_report(tester, severity, product)
+    report_path = generate_report(
+        tester_summary,
+        severity_summary,
+        product_summary
+    )
 
-    execution_time = round(time.time() - start,2)
+    execution_time = round(time.time() - start, 2)
 
     return {
-        "message":"Report Generated",
-        "execution_time":execution_time,
-        "report":report
+        "status": "success",
+        "report": report_path,
+        "execution_time_seconds": execution_time
     }
