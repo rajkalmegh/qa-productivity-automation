@@ -16,11 +16,20 @@ def fetch_devops_data():
         "query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug'"
     }
 
-    response = requests.post(
-        wiql_url,
-        json=query,
-        auth=HTTPBasicAuth('', PAT)
-    ).json()
+   response = requests.post(
+    wiql_url,
+    json=query,
+    auth=HTTPBasicAuth('', PAT)
+)
+
+data = response.json()
+
+print("DEVOPS RESPONSE:", data)
+
+if "workItems" not in data:
+    raise Exception(f"Azure DevOps API error: {data}")
+
+ids = [item["id"] for item in data["workItems"]]
 
     ids = [item["id"] for item in response["workItems"]]
 
