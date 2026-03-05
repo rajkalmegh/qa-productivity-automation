@@ -5,7 +5,11 @@ from requests.auth import HTTPBasicAuth
 from urllib.parse import quote
 
 ORG = os.getenv("DEVOPS_ORG")
-PROJECT = quote(os.getenv("DEVOPS_PROJECT"))
+PROJECT = os.getenv("DEVOPS_PROJECT")
+
+if PROJECT:
+    PROJECT = quote(PROJECT)
+
 PAT = os.getenv("DEVOPS_PAT")
 
 QUERY_ID = "a1c0e1c6-65ad-4fbb-b389-1a61d4eb4c9b"
