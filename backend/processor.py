@@ -1,9 +1,6 @@
-
 import pandas as pd
 
-def process_data(file):
-
-    df = pd.read_csv(file)
+def process_data(df):
 
     # Tester productivity
     tester_summary = df.groupby("Name").size().reset_index(name="Total Bugs")
@@ -15,4 +12,3 @@ def process_data(file):
     product_summary = df.groupby("Product").size().reset_index(name="Count")
 
     return tester_summary, severity_summary, product_summary
-  
