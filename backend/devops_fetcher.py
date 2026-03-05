@@ -1,22 +1,23 @@
 import requests
 import pandas as pd
+import os
 from requests.auth import HTTPBasicAuth
 
-# Replace these values
-ORG = "your_org"
-PROJECT = "your_project"
-PAT = "your_devops_pat"
+ORG = os.getenv("DEVOPS_ORG")
+PROJECT = os.getenv("DEVOPS_PROJECT")
+PAT = os.getenv("DEVOPS_PAT")
+
 
 def fetch_devops_data():
 
-    url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
+    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
 
     query = {
         "query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug'"
     }
 
     response = requests.post(
-        url,
+        wiql_url,
         json=query,
         auth=HTTPBasicAuth('', PAT)
     ).json()
