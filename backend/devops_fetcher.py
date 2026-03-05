@@ -5,38 +5,26 @@ from requests.auth import HTTPBasicAuth
 from urllib.parse import quote
 
 ORG = os.getenv("DEVOPS_ORG")
-PROJECT = quote(os.getenv("DEVOPS_PROJECT"))  # handles spaces in project name
+PROJECT = quote(os.getenv("DEVOPS_PROJECT"))
 PAT = os.getenv("DEVOPS_PAT")
+
+QUERY_ID = "a1c0e1c6-65ad-4fbb-b389-1a61d4eb4c9b"
 
 
 def fetch_devops_data():
 
-    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
+    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql/{QUERY_ID}?api-version=7.0"
 
-    query = {
-        "query": """
-        SELECT [System.Id]
-        FROM WorkItems
-        WHERE
-        [System.WorkItemType] = 'Bug'
-        AND [System.CreatedDate] >= @Today
-        """
-    }
-
-    response = requests.post(
+    response = requests.get(
         wiql_url,
-        json=query,
         auth=HTTPBasicAuth('', PAT)
     )
 
     data = response.json()
 
-    print("DEVOPS RESPONSE:", data)
-
     if "workItems" not in data:
-        raise Exception(f"Azure DevOps API error: {data}")
+        raise Exception(f"DevOps API error: {data}")
 
-    # Extract bug IDs
     ids = [item["id"] for item in data["workItems"]]
 
     if not ids:
@@ -44,7 +32,6 @@ def fetch_devops_data():
 
     ids_string = ",".join(map(str, ids))
 
-    # Fetch full bug details
     details_url = f"https://dev.azure.com/{ORG}/_apis/wit/workitems?ids={ids_string}&api-version=7.0"
 
     work_items = requests.get(
@@ -55,7 +42,6 @@ def fetch_devops_data():
     bugs = []
 
     for item in work_items["value"]:
-
         fields = item["fields"]
 
         bugs.append({
