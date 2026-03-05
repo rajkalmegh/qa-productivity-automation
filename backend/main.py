@@ -1,21 +1,29 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from backend.processor import process_data
 from backend.report_generator import generate_report
+from backend.devops_fetcher import fetch_devops_data
 import time
 
 app = FastAPI()
+
 
 @app.get("/")
 def home():
     return {"message": "QA Productivity Automation Running"}
 
+
 @app.post("/generate-report")
-async def generate(file: UploadFile = File(...)):
+def generate_report_api():
 
     start = time.time()
 
-    tester_summary, severity_summary, product_summary = process_data(file.file)
+    # Fetch bugs directly from Azure DevOps
+    df = fetch_devops_data()
 
+    # Process productivity data
+    tester_summary, severity_summary, product_summary = process_data(df)
+
+    # Generate Excel report
     report_path = generate_report(
         tester_summary,
         severity_summary,
