@@ -1,43 +1,49 @@
 import requests
+import pandas as pd
 from requests.auth import HTTPBasicAuth
 
+# Replace these values
 ORG = "your_org"
 PROJECT = "your_project"
-PAT = "your_devops_token"
+PAT = "your_devops_pat"
 
-WIQL_URL = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
+def fetch_devops_data():
 
-query = {
-    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug'"
-}
+    url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
 
-response = requests.post(
-    WIQL_URL,
-    json=query,
-    auth=HTTPBasicAuth('', PAT)
-)
+    query = {
+        "query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug'"
+    }
 
-ids = [item['id'] for item in response.json()['workItems']]
-print(ids)
+    response = requests.post(
+        url,
+        json=query,
+        auth=HTTPBasicAuth('', PAT)
+    ).json()
 
+    ids = [item["id"] for item in response["workItems"]]
 
-IDS = ",".join(map(str, ids))
+    ids_string = ",".join(map(str, ids))
 
-details_url = f"https://dev.azure.com/{ORG}/_apis/wit/workitems?ids={IDS}&api-version=7.0"
+    details_url = f"https://dev.azure.com/{ORG}/_apis/wit/workitems?ids={ids_string}&api-version=7.0"
 
-data = requests.get(details_url, auth=HTTPBasicAuth('', PAT)).json()
+    work_items = requests.get(
+        details_url,
+        auth=HTTPBasicAuth('', PAT)
+    ).json()
 
-bugs = []
+    bugs = []
 
-for item in data["value"]:
-    bugs.append({
-        "Name": item["fields"]["System.AssignedTo"]["displayName"],
-        "Severity": item["fields"].get("Microsoft.VSTS.Common.Severity","Normal"),
-        "Product": item["fields"]["System.AreaPath"]
-    })
+    for item in work_items["value"]:
 
-print(bugs)
+        fields = item["fields"]
 
-import pandas as pd
+        bugs.append({
+            "Name": fields.get("System.AssignedTo", {}).get("displayName", "Unknown"),
+            "Severity": fields.get("Microsoft.VSTS.Common.Severity", "Normal"),
+            "Product": fields.get("System.AreaPath", "Unknown")
+        })
 
-df = pd.DataFrame(bugs)
+    df = pd.DataFrame(bugs)
+
+    return df
