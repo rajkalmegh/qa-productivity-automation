@@ -13,28 +13,37 @@ QUERY_ID = "a1c0e1c6-65ad-4fbb-b389-1a61d4eb4c9b"
 
 def fetch_devops_data():
 
-    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql/{QUERY_ID}?api-version=7.0"
+    url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql/{QUERY_ID}?api-version=7.0"
 
     response = requests.get(
-        wiql_url,
+        url,
         auth=HTTPBasicAuth('', PAT)
     )
 
+    if response.status_code != 200:
+        raise Exception(f"DevOps API error: {response.text}")
+
     data = response.json()
 
-    ids = [item["id"] for item in data.get("workItems", [])]
+    work_items = data.get("workItems", [])
 
-    if not ids:
-        raise Exception("Saved query returned no work items")
+    if not work_items:
+        raise Exception("Saved query returned no bugs")
+
+    ids = [item["id"] for item in work_items]
 
     ids_string = ",".join(map(str, ids))
 
     details_url = f"https://dev.azure.com/{ORG}/_apis/wit/workitems?ids={ids_string}&api-version=7.0"
 
-    work_items = requests.get(
+    response = requests.get(
         details_url,
         auth=HTTPBasicAuth('', PAT)
-    ).json()
+    )
+
+    work_items = response.json()
+    print(response.text)
+    
 
     bugs = []
 
@@ -54,6 +63,4 @@ def fetch_devops_data():
             "Product": fields.get("System.AreaPath", "Unknown")
         })
 
-    df = pd.DataFrame(bugs)
-
-    return df
+    return pd.DataFrame(bugs)
