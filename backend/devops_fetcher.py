@@ -14,27 +14,19 @@ def fetch_devops_data():
     wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
 
     query = {
-    "query": """
-    SELECT [System.Id]
-    FROM WorkItems
-    WHERE
-        [System.WorkItemType] = 'Bug'
-        AND [System.State] NOT IN
-            ('Rejected','Draft','Changes Required','Changes Done')
-        AND [Custom.IssueSource] NOT IN
-            ('CAT Audit','Employee Feedback')
-        AND [System.CreatedDate] >= '2025-04-01'
-        AND [System.CreatedDate] < @StartOfDay
-        AND [System.CreatedDate] >= @StartOfDay - 1
-        AND [System.CreatedDate] < @StartOfDay
-
-        
-    """
-}
-
-    
-
-
+        "query": """
+        SELECT [System.Id]
+        FROM WorkItems
+        WHERE
+            [System.WorkItemType] = 'Bug'
+            AND [System.State] NOT IN
+                ('Rejected','Draft','Changes Required','Changes Done')
+            AND [Custom.IssueSource] NOT IN
+                ('CAT Audit','Employee Feedback')
+            AND [System.CreatedDate] >= '2025-04-01'
+            AND [System.CreatedDate] < @StartOfDay
+        """
+    }
 
     response = requests.post(
         wiql_url,
@@ -43,7 +35,6 @@ def fetch_devops_data():
     )
 
     data = response.json()
-    print("DEVOPS RESPONSE:", data)
 
     ids = [item["id"] for item in data.get("workItems", [])]
 
@@ -62,17 +53,17 @@ def fetch_devops_data():
     bugs = []
 
     for item in work_items["value"]:
-    fields = item["fields"]
+        fields = item["fields"]
 
-    created_by = fields.get("System.CreatedBy", {})
+        created_by = fields.get("System.CreatedBy", {})
 
-    if isinstance(created_by, dict):
-        name = created_by.get("displayName", "Unknown")
-    else:
-        name = str(created_by)
+        if isinstance(created_by, dict):
+            name = created_by.get("displayName", "Unknown")
+        else:
+            name = str(created_by)
 
         bugs.append({
-            "Name": fields.get("System.CreatedBy", {}).get("displayName", "Unknown"),
+            "Name": name,
             "Severity": fields.get("Microsoft.VSTS.Common.Severity", "Normal"),
             "Product": fields.get("System.AreaPath", "Unknown")
         })
