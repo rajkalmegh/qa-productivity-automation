@@ -5,34 +5,34 @@ from requests.auth import HTTPBasicAuth
 from urllib.parse import quote
 
 ORG = os.getenv("DEVOPS_ORG")
-PROJECT = os.getenv("DEVOPS_PROJECT")
-
-if PROJECT:
-    PROJECT = quote(PROJECT)
-
+PROJECT = quote(os.getenv("DEVOPS_PROJECT"))
 PAT = os.getenv("DEVOPS_PAT")
-
-QUERY_ID = "a1c0e1c6-65ad-4fbb-b389-1a61d4eb4c9b"
-
 
 def fetch_devops_data():
 
-    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql/{QUERY_ID}?api-version=7.0"
+    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
 
-    response = requests.get(
+    query = {
+        "query": """
+        SELECT [System.Id]
+        FROM WorkItems
+        WHERE
+            [System.WorkItemType] = 'Bug'
+        """
+    }
+
+    response = requests.post(
         wiql_url,
+        json=query,
         auth=HTTPBasicAuth('', PAT)
     )
 
     data = response.json()
 
-    if "workItems" not in data:
-        raise Exception(f"DevOps API error: {data}")
-
-    ids = [item["id"] for item in data["workItems"]]
+    ids = [item["id"] for item in data.get("workItems", [])]
 
     if not ids:
-        return pd.DataFrame()
+        raise Exception("No bugs returned from DevOps query")
 
     ids_string = ",".join(map(str, ids))
 
@@ -54,6 +54,4 @@ def fetch_devops_data():
             "Product": fields.get("System.AreaPath", "Unknown")
         })
 
-    df = pd.DataFrame(bugs)
-
-    return df
+    return pd.DataFrame(bugs)
