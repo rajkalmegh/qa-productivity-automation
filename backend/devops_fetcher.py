@@ -8,29 +8,15 @@ ORG = os.getenv("DEVOPS_ORG")
 PROJECT = quote(os.getenv("DEVOPS_PROJECT"))
 PAT = os.getenv("DEVOPS_PAT")
 
+QUERY_ID = "a1c0e1c6-65ad-4fbb-b389-1a61d4eb4c9b"
+
 
 def fetch_devops_data():
 
-    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql?api-version=7.0"
+    wiql_url = f"https://dev.azure.com/{ORG}/{PROJECT}/_apis/wit/wiql/{QUERY_ID}?api-version=7.0"
 
-    query = {
-        "query": """
-        SELECT [System.Id]
-        FROM WorkItems
-        WHERE
-            [System.WorkItemType] = 'Bug'
-            AND [System.State] NOT IN
-                ('Rejected','Draft','Changes Required','Changes Done')
-            AND [Custom.IssueSource] NOT IN
-                ('CAT Audit','Employee Feedback')
-            AND [System.CreatedDate] >= '2025-04-01'
-            AND [System.CreatedDate] < @StartOfDay
-        """
-    }
-
-    response = requests.post(
+    response = requests.get(
         wiql_url,
-        json=query,
         auth=HTTPBasicAuth('', PAT)
     )
 
@@ -39,7 +25,7 @@ def fetch_devops_data():
     ids = [item["id"] for item in data.get("workItems", [])]
 
     if not ids:
-        raise Exception("No bugs returned from DevOps query")
+        raise Exception("Saved query returned no work items")
 
     ids_string = ",".join(map(str, ids))
 
